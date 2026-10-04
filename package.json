@@ -1,0 +1,66 @@
+{
+  "name": "opencode-background-tasks",
+  "version": "0.1.0",
+  "description": "A sidebar list of the background shells and subagents still running in an OpenCode v2 session",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui",
+    "tui",
+    "background",
+    "background-tasks",
+    "subagents",
+    "sidebar"
+  ],
+  "license": "MIT",
+  "author": "PrismKitty",
+  "repository": "github:PrismKitty/opencode-background-tasks",
+  "homepage": "https://github.com/PrismKitty/opencode-background-tasks#readme",
+  "bugs": "https://github.com/PrismKitty/opencode-background-tasks/issues",
+  "engines": {
+    "opencode": ">=2.0.19"
+  },
+  "type": "module",
+  "exports": {
+    "./tui": "./dist/tui.js"
+  },
+  "imports": {
+    "#src/*": "./src/*",
+    "#test/*": "./test/*"
+  },
+  "files": [
+    "dist",
+    "tui.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/**/*.test.ts'",
+    "build": "scripts/build.ts",
+    "dev": "scripts/dev.sh",
+    "demo": "scripts/demo/record.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dependencies:check": "depcruise src --config .dependency-cruiser.cjs",
+    "check": "pnpm format:check && pnpm typecheck && pnpm dependencies:check && pnpm test",
+    "prepack": "pnpm check && pnpm build"
+  },
+  "devDependencies": {
+    "@babel/core": "7.28.0",
+    "@babel/preset-typescript": "7.27.1",
+    "@opencode/client": "2.0.19",
+    "@opencode/plugin": "2.0.19",
+    "@opencode/theme": "2.0.19",
+    "@opentui/core": "0.5.12",
+    "@opentui/solid": "0.5.12",
+    "@types/babel__core": "7.20.5",
+    "@types/node": "24.19.0",
+    "babel-preset-solid": "1.9.12",
+    "dependency-cruiser": "18.4.0",
+    "prettier": "3.9.9",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "solid-js": "1.9.12",
+    "typescript": "6.0.3"
+  }
+}
