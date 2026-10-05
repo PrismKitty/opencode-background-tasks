@@ -15,7 +15,9 @@ An agent can send a long build, a test run or a subagent to the background and c
 
 ## Install
 
-Needs OpenCode v2. Add the plugin to the `plugins` list in `~/.config/opencode/cli.json`:
+Needs OpenCode v2. OpenCode v1 skips the plugin without showing an error.
+
+Run `opencode plugin add opencode-background-tasks`, or add the plugin to the `plugins` list in `~/.config/opencode/cli.json` yourself:
 
 ```json
 {
