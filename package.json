@@ -1,6 +1,6 @@
 {
   "name": "opencode-background-tasks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A sidebar list of the background shells and subagents still running in an OpenCode v2 session",
   "keywords": [
     "opencode",
