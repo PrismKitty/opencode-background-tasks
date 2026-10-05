@@ -23,6 +23,17 @@ The repo carries a `shell.nix` with Node 24, pnpm and the demo tools. `pnpm chec
 
 `pnpm build` compiles `src/` into `dist/` the way OpenCode compiles a local plugin, which is what the published package ships. `pnpm pack` and `pnpm publish` run the checks and the build first.
 
+## Releasing
+
+Releases go out by hand, inside `nix-shell`, from a clean `main` that matches GitHub.
+
+1. Run the release script for the kind of change. `pnpm release:patch` is for bug fixes, `pnpm release:minor` for new features and `pnpm release:major` for breaking changes. Below 1.0.0, a breaking change is a minor release. The script bumps `package.json`, commits it as "Release 0.2.0", tags it `v0.2.0` and pushes the commit and the tag
+2. Wait for the `check` workflow to pass on GitHub
+3. Run `pnpm publish`. It runs the checks and the build again, then asks for a 2FA code
+4. Run `npm view opencode-background-tasks version` and confirm it prints the new version. npm sometimes holds a release for review for a minute, and shows the old version or a `0.0.0-stage` placeholder until it clears
+
+If `pnpm publish` fails after the push, fix the problem in a new commit, push it and publish again, without bumping the version a second time.
+
 ## The demo
 
 `pnpm demo` records `docs/readme/demo.gif` from OpenCode running in a scratch project. Everything the demo needs lives in `scripts/demo/`, and `record.sh` is the only file there to run.
