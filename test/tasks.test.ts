@@ -44,6 +44,23 @@ describe('backgroundTasks', () => {
       ['npm test \\', 'Probe something'],
     );
   });
+  it('keeps the agent and the requested model of a subagent, dropping any variant', () => {
+    const messages = [
+      assistantMessage(
+        backgroundSubagent('ses_model', 'Research', { model: 'openrouter/meta/llama#high' }),
+        backgroundSubagent('ses_default'),
+        backgroundShell('sh'),
+      ),
+    ];
+    assert.deepEqual(
+      backgroundTasks(messages, alwaysRunning, NOW).map((task) => [task.agent, task.model]),
+      [
+        ['explore', { providerID: 'openrouter', id: 'meta/llama' }],
+        ['explore', undefined],
+        [undefined, undefined],
+      ],
+    );
+  });
   it('starts a task when its tool call began running, not when it moved to the background', () => {
     const [task] = backgroundTasks([assistantMessage(backgroundShell('sh'))], alwaysRunning, NOW);
     assert.equal(task?.startedAt, NOW - 21_000);
@@ -114,7 +131,15 @@ describe('subagentStatus', () => {
 
 describe('elapsedMilliseconds', () => {
   it('counts a running task up to now and stops a finished one at its end', () => {
-    const running = { kind: 'shell', id: 'sh', label: 'x', startedAt: NOW - 3_000, state: 'running' } as const;
+    const running = {
+      kind: 'shell',
+      id: 'sh',
+      label: 'x',
+      agent: undefined,
+      model: undefined,
+      startedAt: NOW - 3_000,
+      state: 'running',
+    } as const;
     assert.equal(elapsedMilliseconds(running, NOW), 3_000);
     assert.equal(elapsedMilliseconds({ ...running, state: 'failed', finishedAt: NOW - 1_000 }, NOW), 2_000);
   });

@@ -32,8 +32,16 @@ export const userMessage = (): SessionMessageInfo =>
 export const backgroundShell = (shellID: string, command = 'sleep 40'): ToolPart =>
   toolPart('shell', { command, background: true }, { status: 'running', shellID });
 
-export const backgroundSubagent = (sessionID: string, description = 'Probe something'): ToolPart =>
-  toolPart('subagent', { agent: 'explore', description, background: true }, { status: 'running', sessionID });
+export const backgroundSubagent = (
+  sessionID: string,
+  description = 'Probe something',
+  extraInput: Record<string, string> = {},
+): ToolPart =>
+  toolPart(
+    'subagent',
+    { agent: 'explore', description, background: true, ...extraInput },
+    { status: 'running', sessionID },
+  );
 
 export const foregroundShell = (command: string): ToolPart =>
   toolPart('shell', { command }, { status: 'completed', exit: 0 });

@@ -2,7 +2,7 @@ import type { ShellInfo } from '@opencode/client';
 import type { Plugin } from '@opencode/plugin/tui';
 import { createMemo, createSignal, Index, onCleanup, Show } from 'solid-js';
 
-import { formatDuration, headingLabel } from '#src/labels.ts';
+import { formatDuration, headingLabel, modelName, taskTitle } from '#src/labels.ts';
 import { backgroundTasks, elapsedMilliseconds, shellStatus, subagentStatus, type BackgroundTask } from '#src/tasks.ts';
 
 interface TaskStripProps {
@@ -14,6 +14,7 @@ interface TaskStripProps {
 interface TaskRowProps {
   context: Plugin.Context;
   task: BackgroundTask;
+  model: string | undefined;
   now: number;
 }
 
@@ -29,14 +30,23 @@ const TaskRow = (props: TaskRowProps) => {
   const labelColor = () => (props.task.state === 'running' ? theme.base : theme.muted);
 
   return (
-    <box flexDirection="row" gap={1}>
-      <text flexShrink={0} fg={theme.feedback[mark().feedback].base}>{`[${mark().symbol}]`}</text>
-      <text flexGrow={1} flexShrink={1} wrapMode="word" fg={labelColor()}>
-        {props.task.label}
-      </text>
-      <text flexShrink={0} fg={theme.muted}>
-        {formatDuration(elapsedMilliseconds(props.task, props.now))}
-      </text>
+    <box flexDirection="column">
+      <box flexDirection="row" gap={1}>
+        <text flexShrink={0} fg={theme.feedback[mark().feedback].base}>{`[${mark().symbol}]`}</text>
+        <text flexGrow={1} flexShrink={1} wrapMode="word" fg={labelColor()}>
+          {taskTitle(props.task)}
+        </text>
+        <text flexShrink={0} fg={theme.muted}>
+          {formatDuration(elapsedMilliseconds(props.task, props.now))}
+        </text>
+      </box>
+      <Show when={props.model !== undefined}>
+        <box paddingLeft={4}>
+          <text wrapMode="word" fg={theme.muted}>
+            {props.model}
+          </text>
+        </box>
+      </Show>
     </box>
   );
 };
@@ -66,6 +76,14 @@ export const TaskStrip = (props: TaskStripProps) => {
 
   const liveStatuses = { shell: liveShellStatus, subagent: liveSubagentStatus };
 
+  const taskModel = (task: BackgroundTask) => {
+    if (task.kind !== 'subagent') {
+      return undefined;
+    }
+    const model = context.data.session.get(task.id)?.model ?? task.model;
+    return model === undefined ? undefined : modelName(model, context.data.location.model.list(location()));
+  };
+
   const syncShellsOnOwnStart = (event: { data: { sessionID: string } }) => {
     if (event.data.sessionID === props.sessionID) {
       void context.data.shell.sync(location());
@@ -81,6 +99,7 @@ export const TaskStrip = (props: TaskStripProps) => {
   onCleanup(() => clearInterval(ticker));
 
   void context.data.shell.sync(location());
+  void context.data.location.model.sync(location());
   onCleanup(context.data.on('session.shell.started', syncShellsOnOwnStart));
 
   return (
@@ -90,7 +109,9 @@ export const TaskStrip = (props: TaskStripProps) => {
           <b>{headingLabel(tasks())}</b>
         </text>
         <box height={1} border={['top']} borderColor={theme.muted} />
-        <Index each={tasks()}>{(task) => <TaskRow context={context} task={task()} now={now()} />}</Index>
+        <Index each={tasks()}>
+          {(task) => <TaskRow context={context} task={task()} model={taskModel(task())} now={now()} />}
+        </Index>
       </box>
     </Show>
   );

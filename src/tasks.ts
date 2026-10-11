@@ -1,11 +1,13 @@
-import type { SessionInfo, SessionMessageInfo, ShellInfo } from '@opencode/client';
+import type { ModelRef, SessionInfo, SessionMessageInfo, ShellInfo } from '@opencode/client';
 
 type TaskKind = 'shell' | 'subagent';
 
 interface LaunchedTask {
   kind: TaskKind;
   id: string;
-  label: string;
+  label: string | undefined;
+  agent: string | undefined;
+  model: ModelRef | undefined; // the model the subagent call asked for, before its session records the one it ran on
   startedAt: number;
 }
 
@@ -44,16 +46,34 @@ const taskKind = (name: unknown): TaskKind | undefined => {
 const taskID = (kind: TaskKind, metadata: JsonRecord): string | undefined =>
   stringField(metadata, ID_FIELDS[kind].launch);
 
-const taskLabel = (kind: TaskKind, input: JsonRecord): string => {
+const taskLabel = (kind: TaskKind, input: JsonRecord): string | undefined => {
   const description = stringField(input, 'description');
-  if (description !== undefined) {
+  if (description !== undefined || kind === 'subagent') {
     return description;
   }
-  if (kind === 'subagent') {
-    return 'subagent';
-  }
-  return stringField(input, 'command')?.split('\n')[0] ?? 'shell';
+  return stringField(input, 'command')?.split('\n')[0];
 };
+
+/**
+ * The subagent tool takes its model as `providerID/modelID`, optionally followed by `#variant`
+ */
+const requestedModel = (input: JsonRecord): ModelRef | undefined => {
+  const reference = stringField(input, 'model')?.split('#')[0];
+  const slash = reference?.indexOf('/') ?? -1;
+  if (reference === undefined || slash <= 0 || slash === reference.length - 1) {
+    return undefined;
+  }
+  return { providerID: reference.slice(0, slash), id: reference.slice(slash + 1) };
+};
+
+const launchedTask = (kind: TaskKind, id: string, input: JsonRecord, startedAt: number): LaunchedTask => ({
+  kind,
+  id,
+  label: taskLabel(kind, input),
+  agent: kind === 'subagent' ? stringField(input, 'agent') : undefined,
+  model: kind === 'subagent' ? requestedModel(input) : undefined,
+  startedAt,
+});
 
 /**
  * A tool call that returned while its work was still running went to the background, whether it
@@ -76,7 +96,7 @@ const launchedTasksIn = (message: SessionMessageInfo): LaunchedTask[] => {
     if (id === undefined) {
       return [];
     }
-    return [{ kind, id, label: taskLabel(kind, part.state.input), startedAt: part.time.ran ?? part.time.created }];
+    return [launchedTask(kind, id, part.state.input, part.time.ran ?? part.time.created)];
   });
 };
 

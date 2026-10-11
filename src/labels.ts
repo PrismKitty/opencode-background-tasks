@@ -1,4 +1,22 @@
+import type { ModelInfo, ModelRef } from '@opencode/client';
+
 import type { BackgroundTask } from '#src/tasks.ts';
+
+const capitalised = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+
+const taskType = (task: Pick<BackgroundTask, 'kind' | 'agent'>): string => {
+  if (task.kind === 'shell') {
+    return 'Shell';
+  }
+  return task.agent === undefined ? 'Subagent' : capitalised(task.agent);
+};
+
+export const taskTitle = (task: Pick<BackgroundTask, 'kind' | 'agent' | 'label'>): string =>
+  task.label === undefined ? taskType(task) : `${taskType(task)}: ${task.label}`;
+
+export const modelName = (model: ModelRef, models: readonly ModelInfo[] | undefined): string =>
+  models?.find((candidate) => candidate.providerID === model.providerID && candidate.modelID === model.id)?.name ??
+  `${model.providerID}/${model.id}`;
 
 export const formatDuration = (milliseconds: number): string => {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));

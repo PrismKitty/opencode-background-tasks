@@ -9,7 +9,7 @@ The repo carries a `shell.nix` with Node 24, pnpm and the demo tools. `pnpm chec
 | File              | Holds                                                                                    |
 | ----------------- | ---------------------------------------------------------------------------------------- |
 | `src/tasks.ts`    | Finding background tasks in the session history and working out whether each one is done |
-| `src/labels.ts`   | The durations and heading the sidebar prints                                             |
+| `src/labels.ts`   | The task titles, model names, durations and heading the sidebar prints                   |
 | `src/sidebar.tsx` | The Solid components, the one-second clock and the live lookups                          |
 | `src/tui.tsx`     | The plugin entry point                                                                   |
 
