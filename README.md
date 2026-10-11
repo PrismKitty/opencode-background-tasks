@@ -33,7 +33,7 @@ To update, run `opencode plugin update opencode-background-tasks`.
 ## What it does
 
 - Lists every shell and subagent the session sent to the background, whether the agent asked for that up front or you moved running work there with `ctrl+b`
-- Names what each task is. A shell reads as `Shell: ./build.sh`, and a subagent by its agent and description, as in `General: Research UK display`, with the model it runs on underneath
+- Names what each task is. A shell reads as `Shell: ./build.sh`, and a subagent by its agent and description, as in `General: Research UK display`, with its model underneath. That is the model the call asked for, or else the one the agent is configured with. When neither names one, the line is left out
 - Counts up each task's running time once a second
 - Marks a finished task `✓`, or `✗` for a non-zero exit, a kill, a timeout or a failed subagent. A finished task keeps its final time and stays on the list for 10 seconds
 - Hides the whole list when no task is running or recently finished

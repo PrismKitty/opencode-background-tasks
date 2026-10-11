@@ -2,7 +2,7 @@ import type { ShellInfo } from '@opencode/client';
 import type { Plugin } from '@opencode/plugin/tui';
 import { createMemo, createSignal, Index, onCleanup, Show } from 'solid-js';
 
-import { formatDuration, headingLabel, modelName, taskTitle } from '#src/labels.ts';
+import { formatDuration, headingLabel, subagentModelName, taskTitle } from '#src/labels.ts';
 import { backgroundTasks, elapsedMilliseconds, shellStatus, subagentStatus, type BackgroundTask } from '#src/tasks.ts';
 
 interface TaskStripProps {
@@ -76,13 +76,8 @@ export const TaskStrip = (props: TaskStripProps) => {
 
   const liveStatuses = { shell: liveShellStatus, subagent: liveSubagentStatus };
 
-  const taskModel = (task: BackgroundTask) => {
-    if (task.kind !== 'subagent') {
-      return undefined;
-    }
-    const model = context.data.session.get(task.id)?.model ?? task.model;
-    return model === undefined ? undefined : modelName(model, context.data.location.model.list(location()));
-  };
+  const taskModel = (task: BackgroundTask) =>
+    subagentModelName(task, context.data.location.agent.list(location()), context.data.location.model.list(location()));
 
   const syncShellsOnOwnStart = (event: { data: { sessionID: string } }) => {
     if (event.data.sessionID === props.sessionID) {
@@ -99,6 +94,7 @@ export const TaskStrip = (props: TaskStripProps) => {
   onCleanup(() => clearInterval(ticker));
 
   void context.data.shell.sync(location());
+  void context.data.location.agent.sync(location());
   void context.data.location.model.sync(location());
   onCleanup(context.data.on('session.shell.started', syncShellsOnOwnStart));
 

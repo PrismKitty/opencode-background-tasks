@@ -26,7 +26,7 @@ const backgroundShell = (id: string, command: string): ToolCall => ({
 const backgroundSubagent = (id: string, description: string, prompt: string): ToolCall => ({
   id,
   name: 'subagent',
-  arguments: { agent: 'explore', description, prompt, background: true },
+  arguments: { agent: 'explore', model: 'demo/scripted', description, prompt, background: true },
 });
 
 const messageText = (message: ChatMessage | undefined): string => {

@@ -1,4 +1,4 @@
-import type { ModelInfo, ModelRef } from '@opencode/client';
+import type { AgentInfo, ModelInfo, ModelRef } from '@opencode/client';
 
 import type { BackgroundTask } from '#src/tasks.ts';
 
@@ -14,9 +14,27 @@ const taskType = (task: Pick<BackgroundTask, 'kind' | 'agent'>): string => {
 export const taskTitle = (task: Pick<BackgroundTask, 'kind' | 'agent' | 'label'>): string =>
   task.label === undefined ? taskType(task) : `${taskType(task)}: ${task.label}`;
 
-export const modelName = (model: ModelRef, models: readonly ModelInfo[] | undefined): string =>
+const modelName = (model: ModelRef, models: readonly ModelInfo[] | undefined): string =>
   models?.find((candidate) => candidate.providerID === model.providerID && candidate.modelID === model.id)?.name ??
   `${model.providerID}/${model.id}`;
+
+const configuredModel = (agent: string | undefined, agents: readonly AgentInfo[] | undefined): ModelRef | undefined =>
+  agents?.find((candidate) => candidate.id === agent || candidate.name === agent)?.model;
+
+/**
+ * The model the subagent call asked for, or else the one its agent is configured with
+ */
+export const subagentModelName = (
+  task: Pick<BackgroundTask, 'kind' | 'agent' | 'model'>,
+  agents: readonly AgentInfo[] | undefined,
+  models: readonly ModelInfo[] | undefined,
+): string | undefined => {
+  if (task.kind !== 'subagent') {
+    return undefined;
+  }
+  const model = task.model ?? configuredModel(task.agent, agents);
+  return model === undefined ? undefined : modelName(model, models);
+};
 
 export const formatDuration = (milliseconds: number): string => {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));

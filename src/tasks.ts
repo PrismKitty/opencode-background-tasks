@@ -7,7 +7,7 @@ interface LaunchedTask {
   id: string;
   label: string | undefined;
   agent: string | undefined;
-  model: ModelRef | undefined; // the model the subagent call asked for, before its session records the one it ran on
+  model: ModelRef | undefined; // the model the subagent call asked for
   startedAt: number;
 }
 
