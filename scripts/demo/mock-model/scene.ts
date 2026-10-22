@@ -61,9 +61,10 @@ const finishNoticeReply = (notice: string): Reply => {
 
 const subagentReply = (request: ChatRequest): Reply => {
   if (lastRole(request) === 'user') {
-    return callTools([{ id: 'read-readme', name: 'read', arguments: { path: 'README.md' } }], 2.5);
+    const countWords = { command: 'sleep 4 && wc -w README.md', description: 'Count README words' };
+    return callTools([{ id: 'count-words', name: 'shell', arguments: countWords }], 1.5);
   }
-  return say(README_SUMMARY, 4);
+  return say(README_SUMMARY, 2);
 };
 
 const agentReply = (request: ChatRequest): Reply => {

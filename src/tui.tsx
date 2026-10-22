@@ -1,23 +1,20 @@
-import type { ShellInfo } from '@opencode/client';
 import type { Plugin } from '@opencode/plugin/tui';
 
-import { TaskStrip } from '#src/sidebar.tsx';
+import { rememberExitedShells } from '#src/ui/exited-shells.ts';
+import { ShellPanel } from '#src/ui/shell-panel.tsx';
+import { TaskList } from '#src/ui/task-list.tsx';
 
 export default {
   id: 'opencode-background-tasks',
   setup(context) {
-    // A shell leaves the shell list once it ends, so its end event is the only record of when that was
-    const [endedShells, updateEndedShells] = context.storage.memory<Record<string, ShellInfo>>('ended-shells', {
-      initial: {},
-    });
-    context.data.on('session.shell.ended', (event) =>
-      updateEndedShells((draft) => {
-        draft[event.data.shell.id] = event.data.shell;
-      }),
-    );
+    const exitedShells = rememberExitedShells(context);
     context.ui.slot({
       append: 'sidebar.content',
-      render: (slot) => <TaskStrip context={context} sessionID={slot.sessionID} endedShells={endedShells} />,
+      render: (slot) => <TaskList context={context} sessionID={slot.sessionID} exitedShells={exitedShells} />,
+    });
+    context.ui.slot({
+      append: 'session.panel',
+      render: (panel) => <ShellPanel context={context} panel={panel} exitedShells={exitedShells} />,
     });
   },
 } satisfies Plugin.Definition;

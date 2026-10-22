@@ -1,6 +1,8 @@
 import type { SessionInfo, SessionMessageInfo, ShellInfo } from '@opencode/client';
 
-type ToolPart = Extract<SessionMessageInfo, { type: 'assistant' }>['content'][number];
+type AssistantMessage = Extract<SessionMessageInfo, { type: 'assistant' }>;
+
+type ContentPart = AssistantMessage['content'][number];
 
 export const NOW = 1_000_000;
 
@@ -9,7 +11,7 @@ const toolPart = (
   input: Record<string, string | boolean>,
   metadata: Record<string, string | number>,
   completedAt = NOW - 10_000,
-): ToolPart => ({
+): ContentPart => ({
   type: 'tool',
   id: `call_${name}`,
   name,
@@ -17,7 +19,7 @@ const toolPart = (
   time: { created: completedAt - 12_000, ran: completedAt - 11_000, completed: completedAt },
 });
 
-export const assistantMessage = (...parts: ToolPart[]): SessionMessageInfo => ({
+export const assistantMessage = (...parts: ContentPart[]): AssistantMessage => ({
   id: 'msg_assistant',
   type: 'assistant',
   agent: 'build',
@@ -26,33 +28,63 @@ export const assistantMessage = (...parts: ToolPart[]): SessionMessageInfo => ({
   content: parts,
 });
 
+export const finishedAssistantMessage = (...parts: ContentPart[]): AssistantMessage => ({
+  ...assistantMessage(...parts),
+  time: { created: NOW - 20_000, completed: NOW - 5_000 },
+});
+
+export const retryingAssistantMessage = (attempt: number): AssistantMessage => ({
+  ...assistantMessage(),
+  retry: { attempt, at: NOW + 2_000, error: { type: 'unknown', message: 'Overloaded' } },
+});
+
+export const runningTool = (name: string, input: Record<string, string>): ContentPart => ({
+  type: 'tool',
+  id: `call_${name}_running`,
+  name,
+  state: { status: 'running', input, metadata: {} },
+  time: { created: NOW - 2_000, ran: NOW - 1_000 },
+});
+
+export const streamingTool = (name: string): ContentPart => ({
+  type: 'tool',
+  id: `call_${name}_streaming`,
+  name,
+  state: { status: 'streaming', input: '{"pa' },
+  time: { created: NOW - 500 },
+});
+
+export const textPart = (): ContentPart => ({ type: 'text', text: 'Found it.' });
+
+export const reasoningPart = (): ContentPart => ({ type: 'reasoning', text: 'Where would that live?' });
+
 export const userMessage = (): SessionMessageInfo =>
   ({ id: 'msg_user', type: 'user', time: { created: NOW - 30_000 }, text: 'hi' }) as SessionMessageInfo;
 
-export const backgroundShell = (shellID: string, command = 'sleep 40'): ToolPart =>
+export const backgroundShell = (shellID: string, command = 'sleep 40'): ContentPart =>
   toolPart('shell', { command, background: true }, { status: 'running', shellID });
 
 export const backgroundSubagent = (
   sessionID: string,
   description = 'Probe something',
   extraInput: Record<string, string> = {},
-): ToolPart =>
+): ContentPart =>
   toolPart(
     'subagent',
     { agent: 'explore', description, background: true, ...extraInput },
     { status: 'running', sessionID },
   );
 
-export const foregroundShell = (command: string): ToolPart =>
+export const foregroundShell = (command: string): ContentPart =>
   toolPart('shell', { command }, { status: 'completed', exit: 0 });
 
-export const foregroundSubagent = (sessionID: string): ToolPart =>
+export const foregroundSubagent = (sessionID: string): ContentPart =>
   toolPart('subagent', { description: 'Foreground' }, { status: 'completed', sessionID });
 
-export const otherTool = (): ToolPart => toolPart('read', { path: 'x' }, { status: 'running' });
+export const otherTool = (): ContentPart => toolPart('read', { path: 'x' }, { status: 'running' });
 
-export const finishReport = (metadata: Record<string, string | number>, createdAt: number): SessionMessageInfo => ({
-  id: `msg_report_${createdAt}`,
+export const finishNotice = (metadata: Record<string, string | number>, createdAt: number): SessionMessageInfo => ({
+  id: `msg_notice_${createdAt}`,
   type: 'synthetic',
   metadata,
   time: { created: createdAt },

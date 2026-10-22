@@ -16,8 +16,11 @@ project=${home}/projects/my-project
 columns=150
 rows=34
 running_marker='[•]'
+sidebar_heading='Background ·'
 # Long enough for the last finished row to sit marked for a while
-linger_seconds=5
+linger_seconds=3
+# click_on measures text with ${#prefix}, which counts characters rather than bytes only in a UTF-8 locale
+export LC_ALL=C.UTF-8
 prompt='Run ./build.sh and ./test.sh as background shells, and start a background explore subagent to summarise README.md. Then stop, without waiting for any of them.'
 
 in_demo() {
@@ -50,6 +53,32 @@ screen_shows() {
 
 all_tasks_finished() {
     ! screen_shows "${running_marker}"
+}
+
+mouse() {
+    in_demo send-keys -l $'\e[<'"$1;$2;$3$4"
+}
+
+# usage: click_on <text>, which hovers over the first place the screen shows the text, then clicks it
+click_on() {
+    local text=$1
+    local row=0
+    local line
+    while IFS= read -r line; do
+        (( row += 1 ))
+        if [[ "${line}" == *"${text}"* ]]; then
+            local prefix=${line%%"${text}"*}
+            local column=$(( ${#prefix} + 2 ))
+            mouse 35 "${column}" "${row}" M
+            sleep 0.8
+            mouse 0 "${column}" "${row}" M
+            mouse 0 "${column}" "${row}" m
+            sleep 0.3
+            mouse 35 1 1 M
+            return 0
+        fi
+    done < <(in_demo capture-pane -p)
+    fail "Couldn't find ${text} on screen"
 }
 
 type_slowly() {
@@ -101,12 +130,15 @@ A small shop front that sells houseplants.
 MARKDOWN
     cat > "${project}/build.sh" <<'SH'
 #!/usr/bin/env bash
-sleep 6
-echo "built"
+for file in catalogue basket checkout delivery plants watering; do
+    echo "Compiling src/${file}.ts"
+    sleep 2
+done
+echo "Built dist/ in 12s"
 SH
     cat > "${project}/test.sh" <<'SH'
 #!/usr/bin/env bash
-sleep 11
+sleep 18
 echo "2 tests failed" >&2
 exit 1
 SH
@@ -145,12 +177,36 @@ start_recording() {
     sleep 1.5
 }
 
+open_subagent_and_return() {
+    say "Opening the subagent's session"
+    click_on 'Explore: Summarise'
+    wait_for 20 "The subagent's session didn't open" screen_shows 'in one sentence'
+    sleep 3
+    in_demo send-keys Escape
+    wait_for 20 "OpenCode didn't go back to the parent session" screen_shows "${sidebar_heading}"
+    sleep 1.5
+}
+
+follow_build_output() {
+    say "Following the build's output"
+    click_on 'Shell: ./build.sh'
+    wait_for 20 "The shell panel didn't open" screen_shows 'follow'
+    wait_for 30 "The build didn't finish in the panel" screen_shows 'Built dist/'
+    sleep 2.5
+    in_demo send-keys Escape
+    wait_for 20 "The shell panel didn't close" screen_shows "${sidebar_heading}"
+}
+
 perform() {
     say "Asking for three background tasks"
     type_slowly "${prompt}"
     in_demo send-keys Enter
     say "Waiting for the background tasks to start"
     wait_for 120 "The background tasks didn't start within 120s" screen_shows "${running_marker}"
+    wait_for 20 "The subagent didn't start its step" screen_shows 'Shell: Count README words'
+    sleep 1.5
+    open_subagent_and_return
+    follow_build_output
     say "Waiting for the background tasks to finish"
     wait_for 120 "The background tasks didn't finish within 120s" all_tasks_finished
     sleep "${linger_seconds}"
